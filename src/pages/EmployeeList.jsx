@@ -79,8 +79,8 @@ const EmployeeList = () => {
                 email: '',
                 role: 'employee',
                 password: 'password123',
-                department: '',
-                position: '',
+                department: 'Development',
+                position: 'Developer',
                 doj: new Date().toISOString().split('T')[0],
                 dob: '',
                 baseSalary: '',
@@ -273,28 +273,33 @@ const EmployeeList = () => {
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-main)' }}>
                                         <Briefcase size={14} /> Department
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={formData.department}
                                         onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                                         style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '14px', background: 'var(--bg-main)' }}
-                                        placeholder="Engineering"
                                         required
-                                    />
+                                    >
+                                        <option value="Development">Development</option>
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="QA">QA</option>
+                                        <option value="ALL">ALL</option>
+                                    </select>
                                 </div>
 
                                 <div>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-main)' }}>
                                         <Tag size={14} /> Position
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={formData.position}
                                         onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                                         style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '14px', background: 'var(--bg-main)' }}
-                                        placeholder="Software Engineer"
                                         required
-                                    />
+                                    >
+                                        <option value="Developer">Developer</option>
+                                        <option value="Executive">Executive</option>
+                                        <option value="ALL">ALL</option>
+                                    </select>
                                 </div>
 
                                 <div>

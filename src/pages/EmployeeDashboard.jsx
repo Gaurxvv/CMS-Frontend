@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
-import { Clock, CheckCircle, Calendar, Briefcase, CreditCard, Check, AlertCircle, ChevronRight, LayoutGrid, FileText, Gift, Plus } from 'lucide-react';
+import { Clock, CheckCircle, Calendar, Briefcase, CreditCard, Check, AlertCircle, ChevronRight, LayoutGrid, FileText, Gift, Plus, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const formatCurrency = (amount) => {
@@ -75,7 +75,7 @@ const CelebrationCard = ({ type, user, years }) => {
     );
 };
 
-const AttendanceTracker = ({ data, handleCheckIn, handleCheckOut, error }) => {
+const AttendanceTracker = ({ data, handleCheckIn, handleCheckOut, error, viewDate, handlePrevMonth, handleNextMonth }) => {
     const { attendance, attendanceHistory, timesheets, holidays = [] } = data;
     const [elapsedTime, setElapsedTime] = useState('00:00:00');
 
@@ -107,8 +107,8 @@ const AttendanceTracker = ({ data, handleCheckIn, handleCheckOut, error }) => {
 
     // Calendar logic
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
+    const currentMonth = viewDate.getMonth();
+    const currentYear = viewDate.getFullYear();
 
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
@@ -161,9 +161,49 @@ const AttendanceTracker = ({ data, handleCheckIn, handleCheckOut, error }) => {
                 </div>
 
                 <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', marginTop: '24px' }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#1e293b', marginBottom: '24px' }}>
-                        {today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} — Monthly Overview
-                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#1e293b', margin: 0 }}>
+                            {viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} — Monthly Overview
+                        </h3>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                                onClick={handlePrevMonth} 
+                                style={{ 
+                                    padding: '8px', 
+                                    borderRadius: '8px', 
+                                    border: '1px solid #e2e8f0', 
+                                    background: 'white', 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    opacity: viewDate.getFullYear() * 12 + viewDate.getMonth() <= (new Date().getFullYear() * 12 + new Date().getMonth() - 4) ? 0.5 : 1,
+                                    pointerEvents: viewDate.getFullYear() * 12 + viewDate.getMonth() <= (new Date().getFullYear() * 12 + new Date().getMonth() - 4) ? 'none' : 'auto'
+                                }} 
+                                title="Previous Month"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <button 
+                                onClick={handleNextMonth} 
+                                style={{ 
+                                    padding: '8px', 
+                                    borderRadius: '8px', 
+                                    border: '1px solid #e2e8f0', 
+                                    background: 'white', 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    opacity: viewDate.getFullYear() * 12 + viewDate.getMonth() >= (new Date().getFullYear() * 12 + new Date().getMonth() + 4) ? 0.5 : 1,
+                                    pointerEvents: viewDate.getFullYear() * 12 + viewDate.getMonth() >= (new Date().getFullYear() * 12 + new Date().getMonth() + 4) ? 'none' : 'auto'
+                                }} 
+                                title="Next Month"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px' }}>
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
@@ -171,7 +211,7 @@ const AttendanceTracker = ({ data, handleCheckIn, handleCheckOut, error }) => {
                         ))}
                         {days.map((day, i) => {
                             const data = getDayData(day);
-                            const isToday = day === today.getDate();
+                            const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
 
                             const getStyles = () => {
                                 if (!day) return { visibility: 'hidden' };
@@ -240,7 +280,7 @@ const AttendanceTracker = ({ data, handleCheckIn, handleCheckOut, error }) => {
         </div>
     );
 };
-const DashboardHome = ({ data, handleCheckIn, handleCheckOut, error }) => {
+const DashboardHome = ({ data, handleCheckIn, handleCheckOut, error, viewDate, handlePrevMonth, handleNextMonth }) => {
     const { user } = useAuth();
     const { timesheets, leaves, holidays, attendanceHistory } = data;
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -312,7 +352,15 @@ const DashboardHome = ({ data, handleCheckIn, handleCheckOut, error }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 {/* Attendance Tracker Core Section */}
-                <AttendanceTracker data={data} handleCheckIn={handleCheckIn} handleCheckOut={handleCheckOut} error={error} />
+                <AttendanceTracker
+                    data={data}
+                    handleCheckIn={handleCheckIn}
+                    handleCheckOut={handleCheckOut}
+                    error={error}
+                    viewDate={viewDate}
+                    handlePrevMonth={handlePrevMonth}
+                    handleNextMonth={handleNextMonth}
+                />
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
                     {[
@@ -548,28 +596,55 @@ const TimesheetView = ({ timesheets, attendanceHistory, fetchDashboardData }) =>
 };
 
 const LeaveView = ({ leaves, fetchDashboardData }) => {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-    // Summary calculations with dynamic accrual (2 days per month)
-    const currentMonth = new Date().getMonth(); // 0 for Jan, 2 for Mar, etc.
-    const accruedPaidLeave = (currentMonth + 1) * 2;
-    const paidLeavesUsed = leaves.filter(l => l.type === 'Paid Leave' && l.status === 'Approved').length;
-    const paidLeavesRemaining = Math.max(0, accruedPaidLeave - paidLeavesUsed);
+    // Summary calculations with dynamic accrual based on DOJ (2 days per month)
+    const getAccruedLeave = () => {
+        if (!user?.doj) return (new Date().getMonth() + 1) * 2;
+        const dojParts = user.doj.split('-'); // Logic assuming YYYY-MM-DD
+        const doj = new Date(dojParts[0], dojParts[1] - 1, 1); // Start of joining month
+        const now = new Date();
+        const months = (now.getFullYear() - doj.getFullYear()) * 12 + (now.getMonth() - doj.getMonth()) + 1;
+        return Math.max(0, months * 2);
+    };
+
+    const accruedPaidLeave = getAccruedLeave();
+
+    const calculateDuration = (start, end) => {
+        if (!start || !end) return 0;
+        const s = new Date(start);
+        const e = new Date(end);
+        if (isNaN(s) || isNaN(e)) return 0;
+        const diff = Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1;
+        return diff > 0 ? diff : 0;
+    };
+
+    const rawPaidLeavesUsed = leaves
+        .filter(l => l.type === 'Paid Leave' && l.status === 'Approved')
+        .reduce((sum, l) => sum + calculateDuration(l.startDate, l.endDate), 0);
+
+    const paidLeavesUsedDisplay = Math.min(rawPaidLeavesUsed, accruedPaidLeave);
+    const paidLeavesRemaining = Math.max(0, accruedPaidLeave - rawPaidLeavesUsed);
 
     // Form States
     const [leaveForm, setLeaveForm] = useState({
         startDate: '',
         endDate: '',
-        type: paidLeavesRemaining > 0 ? 'Paid Leave' : 'Unpaid Leave',
+        type: 'Paid Leave',
         reason: ''
     });
-    const [compForm, setCompForm] = useState({ date: '', toDate: '', type: 'Full Day', reason: '' });
+
+    const [compForm, setCompForm] = useState({
+        date: new Date().toISOString().split('T')[0],
+        type: 'Full Day',
+        reason: ''
+    });
+
     const [status, setStatus] = useState({ type: '', msg: '' });
 
     const stats = [
-        { label: 'Paid Leave', used: paidLeavesUsed, limit: accruedPaidLeave },
-        { label: 'Unpaid Leave', used: leaves.filter(l => l.type === 'Unpaid Leave' && l.status === 'Approved').length, limit: '∞' },
+        { label: 'Paid Leave', used: paidLeavesUsedDisplay, limit: accruedPaidLeave },
     ];
 
     // Update form type if paid leaves run out
@@ -579,15 +654,10 @@ const LeaveView = ({ leaves, fetchDashboardData }) => {
         }
     }, [paidLeavesRemaining]);
 
-    const handleSubmit = async (formData, isCompOff = false) => {
+    const handleSubmit = async (formData) => {
         setStatus({ type: '', msg: '' });
         try {
-            const payload = isCompOff ? {
-                startDate: formData.date,
-                endDate: formData.toDate || formData.date,
-                type: 'Comp Off',
-                reason: formData.reason
-            } : formData;
+            const payload = formData;
 
             // Simple validation
             if (!payload.startDate || !payload.endDate || !payload.reason) {
@@ -595,13 +665,43 @@ const LeaveView = ({ leaves, fetchDashboardData }) => {
                 return;
             }
 
+            // Paid Leave Balance Validation
+            const duration = calculateDuration(payload.startDate, payload.endDate);
+            if (payload.type === 'Paid Leave' && duration > paidLeavesRemaining) {
+                setStatus({ type: 'error', msg: `Insufficient Paid Leave balance. You only have ${paidLeavesRemaining} day(s) left. Please apply for excess days as Unpaid Leave.` });
+                return;
+            }
+
             await axios.post(`${API_URL}/leaves`, payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setStatus({ type: 'success', msg: `${isCompOff ? 'Comp Off' : 'Leave'} applied successfully!` });
+            setStatus({ type: 'success', msg: 'Leave applied successfully!' });
             fetchDashboardData();
-            if (isCompOff) setCompForm({ date: '', toDate: '', type: 'Full Day', reason: '' });
-            else setLeaveForm({ startDate: '', endDate: '', type: 'Paid Leave', reason: '' });
+            setLeaveForm({ startDate: '', endDate: '', type: 'Paid Leave', reason: '' });
+        } catch (err) {
+            setStatus({ type: 'error', msg: err.response?.data?.message || 'Submission failed' });
+        }
+    };
+
+    const handleCompSubmit = async (e) => {
+        e.preventDefault();
+        setStatus({ type: '', msg: '' });
+        try {
+            if (!compForm.reason) {
+                setStatus({ type: 'error', msg: 'Please provide a reason for Comp Off.' });
+                return;
+            }
+            await axios.post(`${API_URL}/leaves`, {
+                startDate: compForm.date,
+                endDate: compForm.date,
+                type: 'Comp Off',
+                reason: compForm.reason
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setStatus({ type: 'success', msg: 'Comp Off request submitted!' });
+            setCompForm({ date: new Date().toISOString().split('T')[0], type: 'Full Day', reason: '' });
+            fetchDashboardData();
         } catch (err) {
             setStatus({ type: 'error', msg: err.response?.data?.message || 'Submission failed' });
         }
@@ -609,85 +709,113 @@ const LeaveView = ({ leaves, fetchDashboardData }) => {
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>Leave & Comp Off</h2>
+            <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>Leave Management</h2>
 
             {/* Summary Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
                 {stats.map((stat, i) => (
-                    <div key={i} className="card" style={{ padding: '24px', background: 'white', border: '1px solid var(--border)' }}>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600', marginBottom: '12px' }}>{stat.label}</p>
-                        <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
-                            {stat.used} <span style={{ color: 'var(--text-muted)', fontSize: '18px', fontWeight: '500' }}>/ {stat.limit}</span>
-                        </h3>
+                    <div key={i} className="card" style={{ padding: '24px', background: 'white', borderRadius: '24px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: i === 0 ? '#eff6ff' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i === 0 ? '#3b82f6' : '#64748b' }}>
+                            {i === 0 ? <Briefcase size={24} /> : <Calendar size={24} />}
+                        </div>
+                        <div>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>{stat.label}</p>
+                            <h3 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
+                                {stat.used} <span style={{ color: 'var(--text-muted)', fontSize: '18px', fontWeight: '500' }}>/ {stat.limit}</span>
+                            </h3>
+                        </div>
                     </div>
                 ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
                 {/* Apply for Leave Form */}
-                <div className="card" style={{ padding: '32px', background: 'white' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                        <Calendar size={20} color="var(--primary)" />
-                        <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>Apply for Leave</h3>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>From Date</label>
-                            <input type="date" value={leaveForm.startDate} onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }} />
+                <div className="card" style={{ padding: '32px', background: 'white', borderRadius: '24px', border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                            <Calendar size={20} />
                         </div>
                         <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>To Date</label>
-                            <input type="date" value={leaveForm.endDate} onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }} />
+                            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: 'var(--text-main)' }}>Apply for Leave</h3>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>Request time off from your manager</p>
                         </div>
                     </div>
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>Leave Type</label>
-                        <select value={leaveForm.type} onChange={e => setLeaveForm({ ...leaveForm, type: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
-                            {paidLeavesRemaining > 0 && <option value="Paid Leave">Paid Leave</option>}
-                            <option value="Unpaid Leave">Unpaid Leave</option>
-                        </select>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '24px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.025em' }}>From Date</label>
+                            <input type="date" value={leaveForm.startDate} onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: '#f8fafc', fontSize: '14px', fontWeight: '500' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.025em' }}>To Date</label>
+                            <input type="date" value={leaveForm.endDate} onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: '#f8fafc', fontSize: '14px', fontWeight: '500' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.025em' }}>Leave Type</label>
+                            <select value={leaveForm.type} onChange={e => setLeaveForm({ ...leaveForm, type: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: '#f8fafc', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
+                                {paidLeavesRemaining > 0 && <option value="Paid Leave">Paid Leave</option>}
+                                <option value="Unpaid Leave">Unpaid Leave</option>
+                            </select>
+                        </div>
                     </div>
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>Reason</label>
-                        <textarea rows="3" value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} placeholder="Enter reason..." style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)', resize: 'none' }} />
+
+                    <div style={{ marginBottom: '32px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.025em' }}>Reason for Leave</label>
+                        <textarea rows="4" value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} placeholder="Please provide a brief reason for your leave request..." style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', background: '#f8fafc', fontSize: '14px', lineHeight: '1.6', resize: 'none' }} />
                     </div>
-                    <button onClick={() => handleSubmit(leaveForm)} className="btn-primary" style={{ width: 'wrap-content', padding: '12px 32px', borderRadius: '10px', gap: '8px' }}>
-                        <Check size={18} /> Submit
-                    </button>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)' }}>
+                            {leaveForm.startDate && leaveForm.endDate && (
+                                <span>Duration: {calculateDuration(leaveForm.startDate, leaveForm.endDate)} day(s)</span>
+                            )}
+                        </div>
+                        <button onClick={() => handleSubmit(leaveForm)} className="btn-primary" style={{ padding: '14px 40px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Check size={18} />
+                            <span>Submit Request</span>
+                        </button>
+                    </div>
                 </div>
 
-                {/* Apply for Comp Off Form */}
-                <div className="card" style={{ padding: '32px', background: 'white' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                        <Calendar size={20} color="#f59e0b" />
-                        <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>Apply for Comp Off</h3>
+                {/* Apply for Comp Off Card */}
+                <div className="card" style={{ padding: '32px', background: 'white', borderRadius: '24px', border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                            <Clock size={20} />
+                        </div>
+                        <div>
+                            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: 'var(--text-main)' }}>Apply for Comp Off</h3>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>Request compensatory leave for extra work</p>
+                        </div>
                     </div>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '24px' }}>ⓘ Can only be applied on weekends or company holidays</p>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>Date</label>
-                            <input type="date" value={compForm.date} onChange={e => setCompForm({ ...compForm, date: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }} />
+                    <form onSubmit={handleCompSubmit}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '24px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.025em' }}>Comp Off Date</label>
+                                <input required type="date" value={compForm.date} onChange={e => setCompForm({ ...compForm, date: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: '#f8fafc', fontSize: '14px', fontWeight: '500' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.025em' }}>Type</label>
+                                <select value={compForm.type} onChange={e => setCompForm({ ...compForm, type: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: '#f8fafc', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
+                                    <option value="Full Day">Full Day</option>
+                                    <option value="Half Day">Half Day</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>To Date</label>
-                            <input type="date" value={compForm.toDate} onChange={e => setCompForm({ ...compForm, toDate: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }} />
+
+                        <div style={{ marginBottom: '32px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.025em' }}>Reason</label>
+                            <textarea required rows="4" value={compForm.reason} onChange={e => setCompForm({ ...compForm, reason: e.target.value })} placeholder="Briefly explain the reason for comp-off..." style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', background: '#f8fafc', fontSize: '14px', lineHeight: '1.6', resize: 'none' }} />
                         </div>
-                    </div>
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>Type</label>
-                        <select value={compForm.type} onChange={e => setCompForm({ ...compForm, type: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
-                            <option>Full Day</option>
-                            <option>Half Day</option>
-                        </select>
-                    </div>
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>Reason</label>
-                        <textarea rows="3" value={compForm.reason} onChange={e => setCompForm({ ...compForm, reason: e.target.value })} placeholder="Enter reason..." style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)', resize: 'none' }} />
-                    </div>
-                    <button onClick={() => handleSubmit(compForm, true)} className="btn-primary" style={{ width: 'wrap-content', padding: '12px 32px', borderRadius: '10px', background: '#f59e0b', gap: '8px' }}>
-                        <Check size={18} /> Submit
-                    </button>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button type="submit" className="btn-primary" style={{ padding: '14px 40px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px', background: '#f59e0b', border: 'none' }}>
+                                <Check size={18} />
+                                <span>Request Comp Off</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -749,37 +877,6 @@ const LeaveView = ({ leaves, fetchDashboardData }) => {
     );
 };
 
-const PayrollView = ({ payrolls }) => (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card" style={{ padding: '32px', borderRadius: '24px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px' }}>Payroll History</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {payrolls.map((payroll, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '20px', background: '#f8fafc', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                    <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>{payroll.month}</p>
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>Monthly Salary</p>
-                    </div>
-                    <div style={{ textAlign: 'right', marginRight: '40px' }}>
-                        <p style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)', margin: 0 }}>
-                            {formatCurrency(payroll.netPay || 0)}
-                        </p>
-                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Net Pay</p>
-                    </div>
-                    <span style={{
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        background: payroll.status === 'Paid' ? '#f0fdf4' : '#fffbeb',
-                        color: payroll.status === 'Paid' ? '#16a34a' : '#f59e0b'
-                    }}>
-                        {payroll.status}
-                    </span>
-                </div>
-            ))}
-        </div>
-    </motion.div>
-);
 
 const EmployeeDashboard = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -787,44 +884,69 @@ const EmployeeDashboard = () => {
     const [attendance, setAttendance] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [viewDate, setViewDate] = useState(new Date());
 
     // Dynamic Data States
     const [timesheets, setTimesheets] = useState([]);
     const [leaves, setLeaves] = useState([]);
     const [holidays, setHolidays] = useState([]);
-    const [payrolls, setPayrolls] = useState([]);
     const [attendanceHistory, setAttendanceHistory] = useState([]);
 
     const { user, token } = useAuth();
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-    useEffect(() => {
-        const timer = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
-        fetchDashboardData();
-        return () => clearInterval(timer);
-    }, []);
-
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         try {
-            const [attRes, tsRes, lvRes, hlRes, pyRes, histRes] = await Promise.all([
+            const params = {
+                month: viewDate.getMonth() + 1,
+                year: viewDate.getFullYear()
+            };
+
+            const [attRes, tsRes, lvRes, hlRes, histRes] = await Promise.all([
                 axios.get(`${API_URL}/attendance/status`, { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get(`${API_URL}/timesheets/my`, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get(`${API_URL}/timesheets/my`, { params, headers: { Authorization: `Bearer ${token}` } }),
                 axios.get(`${API_URL}/leaves/my`, { headers: { Authorization: `Bearer ${token}` } }),
                 axios.get(`${API_URL}/holidays`, { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get(`${API_URL}/payroll/my`, { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get(`${API_URL}/attendance/history`, { headers: { Authorization: `Bearer ${token}` } })
+                axios.get(`${API_URL}/attendance/history`, { params, headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             setAttendance(attRes.data?.checkIn ? attRes.data : null);
             setTimesheets(tsRes.data);
             setLeaves(lvRes.data);
             setHolidays(hlRes.data);
-            setPayrolls(pyRes.data);
             setAttendanceHistory(histRes.data);
             setLoading(false);
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
             setLoading(false);
+        }
+    }, [token, viewDate, API_URL]);
+
+    useEffect(() => {
+        const timer = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
+        if (token) {
+            fetchDashboardData();
+        }
+        return () => clearInterval(timer);
+    }, [token, fetchDashboardData]);
+
+    const handlePrevMonth = () => {
+        const now = new Date();
+        const currentTotalMonths = now.getFullYear() * 12 + now.getMonth();
+        const viewTotalMonths = viewDate.getFullYear() * 12 + viewDate.getMonth();
+        
+        if (viewTotalMonths > currentTotalMonths - 4) {
+            setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+        }
+    };
+
+    const handleNextMonth = () => {
+        const now = new Date();
+        const currentTotalMonths = now.getFullYear() * 12 + now.getMonth();
+        const viewTotalMonths = viewDate.getFullYear() * 12 + viewDate.getMonth();
+        
+        if (viewTotalMonths < currentTotalMonths + 4) {
+            setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
         }
     };
 
@@ -853,10 +975,21 @@ const EmployeeDashboard = () => {
     };
 
     const renderContent = () => {
-        const data = { timesheets, leaves, holidays, payrolls, attendance, attendanceHistory };
+        const data = { timesheets, leaves, holidays, attendance, attendanceHistory };
         switch (activeTab) {
             case 'dashboard':
-                return <DashboardHome data={data} time={time} handleCheckIn={handleCheckIn} handleCheckOut={handleCheckOut} error={error} />;
+                return (
+                    <DashboardHome
+                        data={data}
+                        time={time}
+                        handleCheckIn={handleCheckIn}
+                        handleCheckOut={handleCheckOut}
+                        error={error}
+                        viewDate={viewDate}
+                        handlePrevMonth={handlePrevMonth}
+                        handleNextMonth={handleNextMonth}
+                    />
+                );
             case 'attendance':
                 return <TimesheetView timesheets={timesheets} attendanceHistory={attendanceHistory} fetchDashboardData={fetchDashboardData} />;
             case 'leave':
@@ -899,8 +1032,6 @@ const EmployeeDashboard = () => {
                         </div>
                     </motion.div>
                 );
-            case 'payroll':
-                return <PayrollView payrolls={payrolls} />;
             default:
                 return <DashboardHome data={data} time={time} handleCheckIn={handleCheckIn} handleCheckOut={handleCheckOut} error={error} />;
         }
