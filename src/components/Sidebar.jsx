@@ -30,7 +30,6 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         { id: 'attendance', label: 'Timesheet', icon: Clock },
         { id: 'leave', label: 'Leave & Comp Off', icon: Calendar },
         { id: 'holidays', label: 'Holidays', icon: Gift },
-        { id: 'payroll', label: 'Payroll', icon: DollarSign },
         { id: 'templates', label: 'Templates', icon: FileText, isExternal: true, url: 'https://www.portfolio.manshulearning.com/Index.html' },
     ];
 
