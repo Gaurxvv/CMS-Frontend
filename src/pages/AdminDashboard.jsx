@@ -88,8 +88,8 @@ const AdminDashboard = () => {
         src="/c60e662c-d159-4b54-b83e-50ed164cd42c.jpg" 
         alt="logo"
         style={{ 
-            height: '32px',
-            width: '40px',
+            height: '80px',
+            width: '200px',
             objectFit: 'contain'
         }} 
     />
